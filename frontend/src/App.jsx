@@ -9,7 +9,7 @@ import { LogOut, LayoutGrid, Sparkles, ChevronLeft } from 'lucide-react';
 const API_BASE = 'http://localhost:8000';
 
 function App() {
-  const [user, setUser] = useState(localStorage.getItem('username') || null);
+  const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [currentRoute, setCurrentRoute] = useState(null);
   const [progress, setProgress] = useState({});
