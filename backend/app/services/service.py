@@ -12,21 +12,22 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 model_v3 = genai.GenerativeModel('gemini-3.1-pro-preview')
 #model_v3 = genai.GenerativeModel('gemini-2.5-flash')
 
-class ClaudeService:
-    @staticmethod2
+class Service:
+    @staticmethod
     def summarize_goal(goal: str) -> str:
         """
-        Summarizes a long user goal into 1-3 keywords/role title.
+        Summarizes a long user goal into keywords/role title.
         """
-        prompt = f"Summarize this learning goal into a short, punchy 1-3 word title (e.g., 'Fullstack Dev', 'Python Pro'): \"{goal}\". Return ONLY the title text."
+        prompt = f"Summarize this learning goal into a short, title (e.g., 'Fullstack Developer', 'Python Programming'): \"{goal}\". Return ONLY the title text. if {goal} is not a actual goal, return empty string"
         try:
             response = model.generate_content(prompt)
-            return response.text.strip().replace('"', '')
+            title = response.text.strip().replace('"', '')
+            return title if len(title) > 0 else ""
         except:
-            return goal[:30] # Fallback
+            return ""
 
     @staticmethod
-    def generate_subtree(topic: str, main_goal: str, current_level: int, max_depth: int = 2) -> List[Dict]:
+    def generate_subtree(topic: str, main_goal: str, current_level: int, max_depth: int = 1) -> List[Dict]:
         """
         Generates a subtree for a specific topic with a limited depth.
         """
@@ -38,18 +39,18 @@ class ClaudeService:
         Generate exactly {max_depth} more levels of depth for this branch.
         
         RULES:
-        1. Hierarchical structure: level {current_level + 1} for immediate children, level {current_level + 2} for grandchildren.
+        1. Hierarchical structure: level {current_level + 1} for immediate children.
         2. Descriptions: Concise but informative.
         3. Format: Return ONLY a JSON array of objects.
         
         FIELDS:
         - "title": (string)
         - "description": (string)
-        - "parent_title": (string) MUST BE "{topic}" for immediate children, or the title of a level {current_level + 1} node for grandchildren.
-        - "level": (int) {current_level + 1} or {current_level + 2}.
+        - "parent_title": (string) MUST BE "{topic}" for immediate children.
+        - "level": (int) {current_level + 1}.
         - "is_leaf": (boolean) Set to true if this node is a specific, final skill or tool. Set to false if it's a category that could be expanded further (even if you don't expand it now).
         
-        Limit to 4-6 nodes per prompt to stay focused.
+        Limit to 4-6 closest related nodes per prompt to stay focused.
         """
         
         try:
@@ -83,14 +84,14 @@ class ClaudeService:
         prompt = f"""
         Objective: Expand "{topic}" within the learning journey for "{goal_context}".
         
-        Task: Identify 3-5 logical sub-concepts or building blocks for "{topic}". 
+        Task: Identify immediate related sub-concepts or building blocks for "{topic}". 
         IMPORTANT: Use commonly shared concepts if they exist (e.g., both 'React' and 'Vue' might share 'State Management').
         If "{topic}" is already a very specific tool or a single piece of information that is trivial to expand further, return an empty JSON array [].
         
         Return ONLY a JSON array of objects.
         Fields:
         - "title": (string) Short name of the sub-concept.
-        - "description": (string) Brief 1-sentence overview.
+        - "description": (string) Brief overview.
         - "is_expandable": (boolean) true if this sub-concept can be broken down further, false if it's a specific final skill.
         """
         try:
@@ -142,7 +143,7 @@ class ClaudeService:
         CRITICAL LINK RULES:
         1. VALIDITY: Only provide URLs that actually exist. Prioritize major platforms like YouTube, Official Documentation, Coursera, or reputable blogs (Medium, Dev.to).
         2. ACCESS: Ensure the resources are free to access if possible, or very high-quality if paid.
-        3. VARIETY: Include a mix of videos, articles, and documentation.
+        3. VARIETY: Include a mix of videos(2 resources as possible) , articles, and documentation.
         
         Return ONLY a JSON array of objects.
         Fields:
@@ -189,7 +190,7 @@ class ClaudeService:
         """
         system_prompt = f"""
         You are an expert Learning Advisor AI. Your goal is to help the user master: "{goal_context}".
-        Be encouraging, professional, and provide clear explanations. 
+        Be encouraging, professional, and provide clear explanations which easy to understand. 
         If they ask about a specific concept, explain it simply. 
         Suggest next steps if they seem stuck.
         Keep responses concise but insightful.
